@@ -574,10 +574,19 @@ class UlanganController extends Controller
         $siswa = Siswa::where('no_induk', Auth::user()->no_induk)->first();
         $jadwalUjian = JadwalUjian::where('id', $id)->first();
         $question = Question::where('question_model_id', $jadwalUjian->question_model_id)->OrderBy('id', 'asc')->get();
-        $ujian = Ujian::where('siswa_id', $siswa->id)->where('jadwal_ujian_id', $jadwalUjian->id)->OrderBy('id', 'asc')->first();
+        $ujian = Ujian::where('siswa_id', $siswa->id)->where('jadwal_ujian_id', $jadwalUjian->id)->first();
+
+        if ($ujian === null) {
+            $ujian = Ujian::create([
+                'siswa_id' => $siswa->id,
+                'jadwal_ujian_id' => $jadwalUjian->id,
+                'hasil' => 0,
+                'is_finish' => 0
+            ]);
+        } 
 
         foreach ($question as $key => $value) {
-            $jawaban = UjianJawaban::where('question_id', $value->id)->first();
+            $jawaban = UjianJawaban::where('question_id', $value->id)->where('ujian_id', $ujian->id)->first();
 
             if ($jawaban !== null) {
                 if ($value->type === 'Essay') {
@@ -592,15 +601,6 @@ class UlanganController extends Controller
                 $value->question_option = $question_option;
             }
         }
-
-        if ($ujian === null) {
-            $ujian = Ujian::create([
-                'siswa_id' => $siswa->id,
-                'jadwal_ujian_id' => $jadwalUjian->id,
-                'hasil' => 0,
-                'is_finish' => 0
-            ]);
-        } 
 
         return view('siswa.ujian.ujian', compact('siswa', 'jadwalUjian', 'question', 'ujian'));
     }
